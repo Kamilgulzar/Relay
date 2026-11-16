@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
+const fixture=JSON.parse(fs.readFileSync('outputs/qa-test-workspace.json','utf8'));
+if(!/^[a-f0-9-]{36}$/.test(fixture.workspace)||!/^relay-admin-\d+@test\.example$/.test(fixture.adminEmail))throw Error('Refusing cleanup: this is not a QA test fixture');
+const ws=fixture.workspace;
+const sql=`DELETE FROM sessions WHERE account_id IN (SELECT user_id FROM members WHERE workspace_id='${ws}');
+DELETE FROM account_invites WHERE workspace_id='${ws}';
+DELETE FROM auth_settings WHERE key='initial_admin' AND value IN (SELECT owner_id FROM workspaces WHERE id='${ws}' AND name='QA verification workspace');
+DELETE FROM accounts WHERE id IN (SELECT user_id FROM members WHERE workspace_id='${ws}') AND email LIKE '%@test.example';
+DELETE FROM records WHERE workspace_id='${ws}';
+DELETE FROM members WHERE workspace_id='${ws}';
+DELETE FROM workspaces WHERE id='${ws}' AND name='QA verification workspace';`;
+fs.writeFileSync('outputs/qa-cleanup.sql',sql);
+const result=spawnSync(process.execPath,['--import','./scripts/sites-env.mjs','./node_modules/wrangler/bin/wrangler.js','d1','execute','DB','--local','--config','dist/server/wrangler.json','--persist-to','.wrangler/state','--file','outputs/qa-cleanup.sql'],{stdio:'inherit'});
+process.exitCode=result.status||0;

@@ -1,0 +1,1 @@
+These are the original 2026-11-06 verification scripts for platform authentication and Admin/Editor/Viewer roles. They are retained as historical evidence, are not current runnable tests, and are superseded by tests/qa.mjs. No platform-header authentication bypass remains in Relay.

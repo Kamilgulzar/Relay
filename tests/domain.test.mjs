@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {taskInput,taskPatch,projectInput,date,assertDateRange,assertNoCycle} from '../lib/validation.ts';
+const validProject={name:'Launch',sections:[{id:'todo',name:'To do'}]};
+test('task names are trimmed and required',()=>{assert.equal(taskInput.parse({name:'  Launch review  '}).name,'Launch review');assert.throws(()=>taskInput.parse({name:'   '}))});
+test('tasks have explicit defaults',()=>{const t=taskInput.parse({name:'Review'});assert.equal(t.completed,false);assert.equal(t.priority,'none');assert.deepEqual(t.dependencies,[]);assert.equal(t.dueDate,'')});
+test('task names and descriptions are bounded',()=>{assert.throws(()=>taskInput.parse({name:'x'.repeat(181)}));assert.throws(()=>taskInput.parse({name:'Review',description:'x'.repeat(30001)}))});
+test('calendar dates reject rollover values',()=>{assert.throws(()=>date.parse('2026-02-30'));assert.throws(()=>date.parse('2026-13-01'));assert.equal(date.parse('2028-02-29'),'2028-02-29')});
+test('date ranges allow open ends and same-day tasks',()=>{assert.doesNotThrow(()=>assertDateRange('','2026-11-06'));assert.doesNotThrow(()=>assertDateRange('2026-11-06','2026-11-06'));assert.throws(()=>assertDateRange('2026-11-07','2026-11-06'))});
+test('priority and status are closed enums',()=>{assert.throws(()=>taskInput.parse({name:'Task',priority:'critical'}));assert.throws(()=>taskInput.parse({name:'Task',status:'unknown'}))});
+test('patches cannot overwrite ownership or versions',()=>{assert.throws(()=>taskPatch.strict().parse({createdBy:'attacker'}));assert.throws(()=>taskPatch.strict().parse({version:100}));assert.deepEqual(taskPatch.strict().parse({completed:true}),{completed:true})});
+test('negative time values are rejected',()=>{assert.throws(()=>taskInput.parse({name:'Task',timeSpent:-1}));assert.throws(()=>taskInput.parse({name:'Task',estimate:-1}))});
+test('task dependency limit prevents unbounded graphs',()=>{assert.throws(()=>taskInput.parse({name:'Task',dependencies:Array.from({length:51},(_,i)=>String(i))}))});
+test('dependency DAGs are accepted',()=>{assert.doesNotThrow(()=>assertNoCycle('a',['b'],[{id:'a',dependencies:[]},{id:'b',dependencies:['c']},{id:'c',dependencies:[]}]))});
+test('self dependencies and indirect cycles are rejected',()=>{assert.throws(()=>assertNoCycle('a',['a'],[{id:'a',dependencies:[]}]));assert.throws(()=>assertNoCycle('a',['b'],[{id:'a',dependencies:[]},{id:'b',dependencies:['c']},{id:'c',dependencies:['a']}]))});
+test('diamond-shaped DAGs are not incorrectly rejected',()=>{assert.doesNotThrow(()=>assertNoCycle('a',['b','c'],[{id:'a',dependencies:[]},{id:'b',dependencies:['d']},{id:'c',dependencies:['d']},{id:'d',dependencies:[]}]))});
+test('a project needs at least one named section',()=>{assert.equal(projectInput.parse(validProject).privacy,'workspace');assert.throws(()=>projectInput.parse({...validProject,sections:[]}));assert.throws(()=>projectInput.parse({...validProject,sections:[{id:'x',name:''}]}))});
+test('project colors and custom field types are validated',()=>{assert.throws(()=>projectInput.parse({...validProject,color:'url(evil)'}));assert.throws(()=>projectInput.parse({...validProject,fields:[{id:'x',name:'Field',type:'script',options:[]}]}))});
