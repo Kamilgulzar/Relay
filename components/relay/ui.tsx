@@ -1,6 +1,6 @@
 'use client';
 import React,{useEffect,useRef} from 'react';
-import {X,Check,CaretDown,Plus,Circle,Flag,CalendarBlank,ChatCircle,Paperclip,ArrowRight} from '@phosphor-icons/react';
+import {X,Check,CaretDown,Plus,Circle,Flag,CalendarBlank,ChatCircle,Paperclip} from '@phosphor-icons/react';
 import type {Member,Task} from '../../lib/model';
 import {initials,dateLabel,isOverdue} from '../../lib/model';
 export const priorities:Record<string,{label:string;color:string}>={none:{label:'None',color:'neutral'},low:{label:'Low',color:'blue'},medium:{label:'Medium',color:'amber'},high:{label:'High',color:'rose'},urgent:{label:'Urgent',color:'red'}};

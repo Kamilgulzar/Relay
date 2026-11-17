@@ -16,6 +16,5 @@
 
 On a fresh database, open `/login` and use the setup token to create the first Admin. Verify login, the Quality Dashboard, and a small attachment upload and download. The Vercel app accepts files up to 4 MB each.
 
-To enable **Run in background** and **Run and watch**, apply the two automation migrations and connect the Relay browser runner to the same database. See [Automated testing](AUTOMATED-TESTING.md).
 
 To bring over the existing local workspace, use an empty hosted database and migrate the local PostgreSQL data before creating an Admin there. Transfer any existing attachment objects to R2 with the same keys. The clean source folder contains no workspace records or credentials.

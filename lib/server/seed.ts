@@ -1,12 +1,12 @@
-import type {ChatGPTUser} from '../../app/chatgpt-auth';
+import type {Account} from './auth';
 import {database,now} from './store';
 import {colors} from '../model';
 
-export async function seedWorkspace(user:ChatGPTUser,workspaceId:string,memberId:string){
- const name=user.fullName||user.email.split('@')[0];const stamp=now();
+export async function seedWorkspace(account:Pick<Account, 'id' | 'email' | 'name'>,workspaceId:string,memberId:string){
+ const name=account.name||account.email.split('@')[0];const stamp=now();
  const ids={project:`${workspaceId}_website`,brand:`${workspaceId}_brand`,product:`${workspaceId}_product`,team:`${workspaceId}_design`,maya:`${workspaceId}_maya`,elliot:`${workspaceId}_elliot`,sofia:`${workspaceId}_sofia`};
- const queries=[database().prepare('INSERT INTO workspaces(id,name,owner_id,created_at) VALUES(?,?,?,?) ON CONFLICT DO NOTHING').bind(workspaceId,'Studio workspace',user.userId,stamp)];
- for(const m of [{id:memberId,userId:user.userId,email:user.email,name,role:'admin',color:colors[0]},{id:ids.maya,userId:null,email:'maya@relay.example',name:'Maya Chen',role:'developer',color:colors[1]},{id:ids.elliot,userId:null,email:'elliot@relay.example',name:'Elliot Reed',role:'developer',color:colors[2]},{id:ids.sofia,userId:null,email:'sofia@relay.example',name:'Sofia Ahmed',role:'developer',color:colors[3]}])queries.push(database().prepare('INSERT INTO members(id,workspace_id,user_id,email,name,role,color) VALUES(?,?,?,?,?,?,?) ON CONFLICT DO NOTHING').bind(m.id,workspaceId,m.userId,m.email,m.name,m.role,m.color));
+ const queries=[database().prepare('INSERT INTO workspaces(id,name,owner_id,created_at) VALUES(?,?,?,?) ON CONFLICT DO NOTHING').bind(workspaceId,'Studio workspace',account.id,stamp)];
+ for(const m of [{id:memberId,userId:account.id,email:account.email,name,role:'admin',color:colors[0]},{id:ids.maya,userId:null,email:'maya@relay.example',name:'Maya Chen',role:'developer',color:colors[1]},{id:ids.elliot,userId:null,email:'elliot@relay.example',name:'Elliot Reed',role:'developer',color:colors[2]},{id:ids.sofia,userId:null,email:'sofia@relay.example',name:'Sofia Ahmed',role:'developer',color:colors[3]}])queries.push(database().prepare('INSERT INTO members(id,workspace_id,user_id,email,name,role,color) VALUES(?,?,?,?,?,?,?) ON CONFLICT DO NOTHING').bind(m.id,workspaceId,m.userId,m.email,m.name,m.role,m.color));
  const put=(kind:string,id:string,data:unknown)=>queries.push(database().prepare('INSERT INTO records(id,workspace_id,kind,data,version,updated_at) VALUES(?,?,?,?,1,?) ON CONFLICT DO NOTHING').bind(id,workspaceId,kind,JSON.stringify({...data as object,id}),stamp));
  const sections=[{id:'planning',name:'Planning'},{id:'design',name:'In design'},{id:'building',name:'In progress'},{id:'review',name:'In review'},{id:'done',name:'Complete'}];
  const fields=[{id:'effort',name:'Effort',type:'select',options:['Small','Medium','Large']},{id:'channel',name:'Channel',type:'select',options:['Web','Brand','Product']}];

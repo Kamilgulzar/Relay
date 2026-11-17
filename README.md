@@ -53,7 +53,7 @@ Passwords are salted scrypt hashes using the native runtime crypto implementatio
 
 Account and QA writes use same-origin checks, bounded request bodies, validation, throttling and server-side role/object checks. Invitation links expire after 48 hours; Admin-issued reset links after one hour. Links are single use and stored hashed. No passwords or live invitation tokens are committed to source. On hosted installations the first administrator setup additionally requires the `RELAY_SETUP_TOKEN` runtime secret; local loopback setup does not. Invitations and resets are shared manually: outbound email is not configured.
 
-## Existing project features
+## Project workspace
 
 Persistent workspaces; project templates, sections, sharing, stars and archiving; tasks/subtasks, assignees, dates, priority/status, tags, custom fields, dependencies, recurrence, time tracking and Trash; List, Board, Calendar, Timeline, Dashboard, Overview and Files; comments/activity; file uploads; teams, portfolios, goals, forms, rules, documents, preferences, shortcuts and JSON export remain available.
 
@@ -91,19 +91,23 @@ node scripts/import-d1-to-postgres.mjs "<path-to-local-D1-SQLite-file>"
 
 Use the workspace database file under `.wrangler/state/v3/d1`, excluding `metadata.sqlite`. The import keeps account credentials, workspace IDs, QA results, and attachment references. Sign in again and reissue any outstanding invitation or password-reset links. When using the same local R2 bucket, existing files stay accessible. For a move to a hosted bucket, copy the attachment objects too. Verify sign-in and workspace contents before sending users to the new database.
 
+## Architecture
+
+Relay uses React screens and Next.js API routes. The Cloudflare Worker build runs through Vinext and supports D1 or PostgreSQL. The Vercel build uses PostgreSQL. Both deployments store attachments in R2.
+
 ## Verification
 
 - `npm run typecheck`
+- `npm run lint -- --max-warnings 0`
 - `npm test` — 14 domain checks.
 - `npm run test:landing` — anonymous landing, own-login entry, mobile navigation and reduced-motion checks on port 5173.
 - `npm run test:qa` — independent-account and full role/workflow API/browser checks on a **fresh, unconfigured local auth installation**. The suite refuses non-loopback URLs and refuses an already configured administrator. It creates isolated test accounts; it is not intended to run against a workspace in actual use.
 - Set `RELAY_TEST_URL=http://127.0.0.1:5174` to run the QA suite against `npm start -- --port 5174`.
 - After a QA suite run, `node tests/cleanup-qa.mjs` removes only its recorded verification workspace/accounts and reopens initial setup. It validates the fixture identity before issuing local cleanup.
 
-The platform-auth/Editor/Viewer test scripts are retained under `tests/historical/` as historical evidence. They are superseded and are not current runnable suites. See `VERIFICATION.md` for actual current results and `QA-REQUIREMENTS.md` for requirement coverage.
 
 ## Hosting status and limits
 
-The Site ID remains `appgprj_6aeccc08b3808191bdd1583bd7e9e810`. No publication has occurred: source upload/private hosting was blocked by automatic approval review pending explicit approval for that external transfer. No deployment is being retried as part of this work.
+The Cloudflare build packages the Worker hosting configuration from `.openai/hosting.json`. See [Vercel deployment](DEPLOY-VERCEL.md) for the Node.js deployment path.
 
-This fulfills the specified QA workflow locally. It does not add unrelated enterprise Asana features such as billing, SSO/SCIM, external integrations, email delivery, external AI, capacity scheduling or compliance certification. Broad production-scale load, disaster recovery and cross-region operations are not verified. Reporting loads an authorized workspace snapshot, so larger installations will need pagination and operational monitoring.
+Verification covers local environments. Production load, disaster recovery, and cross-region operations require separate verification. Reporting currently loads an authorized workspace snapshot.

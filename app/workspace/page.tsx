@@ -1,5 +1,10 @@
-import {getChatGPTUser} from '../chatgpt-auth';
+import {getSessionAccount} from '@/lib/server/auth';
 import {redirect} from 'next/navigation';
-import RelayApp from '../../components/relay/app';
+import ProjectWorkspace from '../../components/relay/app';
 export const dynamic='force-dynamic';
-export default async function Workspace(){const user=await getChatGPTUser();if(!user)redirect('/login');return <RelayApp signedIn={true}/>}
+export default async function WorkspacePage() {
+  const account = await getSessionAccount();
+  if (!account) redirect('/login');
+
+  return <ProjectWorkspace/>;
+}
